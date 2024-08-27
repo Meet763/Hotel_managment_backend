@@ -26,8 +26,8 @@ app.get('/', function (req, res) {
 const personSchema = require('./routes/personRoutes')
 const menuSchema = require('./routes/menuRoutes')
 
-app.use('/person', localAuthMiddleware, personSchema)
-app.use('/menu', localAuthMiddleware, menuSchema)
+app.use('/person',localAuthMiddleware, personSchema)
+app.use('/menu', menuSchema)
 
 app.listen(PORT, () => {
     console.log("server is on")
