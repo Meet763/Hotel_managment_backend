@@ -1,15 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const person = require('./../models/person');
+const {jwtAuthMiddleware, generateToken} = require('./../jwt');
 
-router.post('/', async (req, res) => {
+router.post('/Signup', async (req, res) => {
     try{
         const data = req.body
         const newPerson = new person(data)
 
         const responce = await newPerson.save();
         console.log('data saved')
-        res.status(200).json(responce)
+
+        const payload = {
+            id: responce.id,
+            username: responce.username,
+            password: responce.password
+        }
+
+        const token = generateToken(payload);
+        console.log("token is:" + token);
+        res.status(200).json({responce: responce, token: token})
     }
     catch(err){
         console.log(err);
@@ -17,7 +27,46 @@ router.post('/', async (req, res) => {
     }
 })
 
-router.get('/', async (req, res) => {
+router.post('/login', async(req, res) => {
+    try{
+        const {username, password} = req.body;
+
+        const user = await person.findOne({username: username})
+
+        if(!user || !( await user.comparePassword(password))){
+            res.status(401).json({error: 'invalis username 0r password'})
+        }
+
+        const payload = {
+            id: user.id,
+            username: user.username,
+            password: user.password
+        }
+
+        const token = generateToken(payload);
+
+        res.json({token});
+        
+    }catch(err){
+        console.log(err);
+        res.status(500).json({error: 'internal server error'});
+    }
+})
+
+router.get('/profile', jwtAuthMiddleware, async (req, res) => {
+    try{
+        const userData = req.user;
+        const userId = userData.id;
+        const user = await person.findById(userId);
+        res.status(200).json({user});
+    }catch(err){
+        console.log(err);
+        res.status(500).json({error: 'internal server error'});
+    }
+
+})
+
+router.get('/', jwtAuthMiddleware, async (req, res) => {
     try{
         const data = await person.find();
         console.log('data fetched')
